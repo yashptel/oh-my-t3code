@@ -87,16 +87,14 @@ export const deriveProviderInstanceConfigMap = (
     // `providers` struct is keyed on the same literal slug as
     // `driverKind`. Access is dynamic (the driver kind is a branded string),
     // but it's constrained to `keyof settings.providers` by the union of
-    // built-in driver kinds.
+    // built-in driver kinds. A driver without a legacy field still gets its
+    // default slot so it can be enabled from Settings.
     const legacyKey = driver.driverKind as keyof ServerSettings["providers"];
     const legacyConfig = settings.providers[legacyKey];
-    if (legacyConfig === undefined) {
-      continue;
-    }
 
     merged[instanceId] = {
       driver: driver.driverKind,
-      config: legacyConfig,
+      config: legacyConfig ?? driver.defaultConfig(),
     };
   }
 
