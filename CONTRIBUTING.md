@@ -1,76 +1,61 @@
 # Contributing
 
+`oh-my-t3code` is a fork of [pingdotgg/t3code](https://github.com/pingdotgg/t3code) whose goal
+is to be the best GUI for stock Oh My Pi. Contributions are welcome. The constraint that shapes
+every one of them is that the fork merges upstream regularly, so a change has to survive that
+merge.
+
 ## Developer Setup
 
-See the [development runbook](docs/operations/development.md#first-checkout) for the initial checkout,
-development commands, tests, and platform-specific desktop packaging prerequisites.
+See the [development runbook](docs/operations/development.md#first-checkout) for the initial
+checkout, development commands, tests, and platform-specific desktop packaging prerequisites.
 
-## Read This First
+Add the upstream remote once per clone. The
+[upstream sync runbook](docs/operations/upstream-sync.md) covers the remote, the branch model,
+the merge procedure, and the files to stay out of.
 
-We are not actively accepting contributions right now.
+## Two kinds of change
 
-You can still report a bug or open a PR, but please do so knowing there is a high chance we close it, defer it forever, or never look at it.
+**OMP work** is anything that exists because of Oh My Pi: the provider driver, its runtime layer,
+its user guide. It lives in files upstream does not have, listed in
+[Where fork code lives](docs/operations/upstream-sync.md#where-fork-code-lives). Touching an
+upstream-owned file for OMP work is limited to the one-line registrations in the
+[hot files table](docs/operations/upstream-sync.md#hot-files).
 
-Feature requests and proposals belong in [Ideas discussions](https://github.com/pingdotgg/t3code/discussions/categories/ideas), not issues.
+**Generic work** is a fix or improvement that has nothing to do with OMP and would be accepted
+upstream as written. Put it in its own commit with no fork vocabulary so it can be cherry-picked
+onto a clean `upstream/main` branch. See
+[Proposing changes upstream](docs/operations/upstream-sync.md#proposing-changes-upstream).
 
-If that sounds annoying, that is because it is. This project is still early and we are trying to keep scope, quality, and direction under control.
+A change that is neither (a product feature that only makes sense in this fork but lives in
+shared UI, for example) needs an issue first so we can agree on the smallest upstream footprint.
 
-PRs are automatically labeled with a `vouch:*` trust status and a `size:*` diff size based on changed lines.
+## Before you write code
 
-If you are an external contributor, expect `vouch:unvouched` until we explicitly add you to [.github/VOUCHED.td](.github/VOUCHED.td).
+Read the two [structural traps](docs/operations/upstream-sync.md#structural-traps). The fork
+adds no database migrations, and the OMP provider never reads the model manifest. Both rules
+come from upstream mechanisms that silently discard the obvious fork change.
 
-## What We Are Most Likely To Accept
+Read [`AGENTS.md`](AGENTS.md). Its guidance on performance, surfaces, documentation, and
+verification applies here unchanged.
 
-Small, focused bug fixes.
+## Opening a PR
 
-Small reliability fixes.
+One issue per branch, one concern per PR. Conventional commit titles in plain language, as in
+`feat(provider): register the OMP driver`.
 
-Small performance improvements.
+Explain what changed and why. State which hot files the PR touches, if any, and why the touch
+could not be avoided.
 
-Tightly scoped maintenance work that clearly improves the project without changing its direction.
+Follow the [documentation rules](AGENTS.md#documentation). Internal docs are for decisions and
+hard-to-discover constraints. User guides change when how to use a feature changes.
 
-## What We Are Least Likely To Accept
+UI changes include before/after images. Motion or timing changes include a short video.
 
-Large PRs.
+Docs-only PRs that document a procedure include the real output of running it once.
 
-Drive-by feature work.
+## Reporting bugs
 
-Opinionated rewrites.
-
-Anything that expands product scope without us asking for it first.
-
-If you open a 1,000+ line PR full of new features, we will probably close it quickly and remember that you ignored the clearly written instructions.
-
-## If You Still Want To Open A PR
-
-Keep it small.
-
-Explain exactly what changed.
-
-Explain exactly why the change should exist.
-
-Follow the [documentation rules](AGENTS.md#documentation). Keep internal docs for decisions and
-hard-to-discover constraints. Update user guides when how to use a feature changes; skip descriptions
-of obvious controls and cosmetic changes.
-
-Do not mix unrelated fixes together.
-
-If the PR makes anything resembling a UI change, include clear before/after images.
-
-If the change depends on motion, timing, transitions, or interaction details, include a short video.
-
-If we have to guess what changed, we are much less likely to review it.
-
-## Discuss Changes First
-
-If you are thinking about a non-trivial change, start a discussion first. Issues are reserved for bug reports.
-
-That still does not mean we will want the PR, but it gives you a chance to avoid wasting your time.
-
-## Be Realistic
-
-Opening a PR does not create an obligation on our side.
-
-We may close it. We may ignore it. We may ask you to shrink it. We may reimplement the idea ourselves later.
-
-If you are fine with that, proceed.
+Bugs in generic T3 Code behavior that reproduce on upstream belong in
+[upstream's issue tracker](https://github.com/pingdotgg/t3code/issues). Bugs in OMP behavior, or
+in the fork's own merges, belong here.
