@@ -53,6 +53,17 @@ export function ProviderIcon(props: ProviderIconProps) {
     );
   }
 
+  if (props.provider === "omp") {
+    return (
+      <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <Path
+          fill={isDarkMode ? "#F5F5F5" : "#0F0F0F"}
+          d="M3 5H21V8H3V5ZM6.5 8H9.5V19H6.5V8ZM14.5 8H17.5V19H14.5V8Z"
+        />
+      </Svg>
+    );
+  }
+
   if (props.provider === "cursor") {
     return (
       <Svg width={size} height={size} viewBox="0 0 466.73 532.09" fill="none">
