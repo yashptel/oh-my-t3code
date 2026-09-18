@@ -109,7 +109,9 @@ export function buildInitialOmpProviderSnapshot(
       checkedAt: DateTime.formatIso(now),
       models: ompModelsFromSettings(ompSettings.customModels),
       probe: {
-        installed: ompSettings.enabled,
+        // Unknown until the probe runs; `!installed && warning` is what the
+        // registry treats as a pending initial probe and keeps cached models for.
+        installed: false,
         version: null,
         status: "warning",
         auth: { status: "unknown" },

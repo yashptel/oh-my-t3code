@@ -195,6 +195,7 @@ describe("buildInitialOmpProviderSnapshot", () => {
       );
       expect(snapshot.enabled).toBe(true);
       expect(snapshot.status).toBe("warning");
+      expect(snapshot.installed).toBe(false);
       expect(snapshot.message).toContain("Checking Oh My Pi");
       expect(snapshot.models.map((model) => model.slug)).toEqual(["default", "my-org/custom"]);
     }),
