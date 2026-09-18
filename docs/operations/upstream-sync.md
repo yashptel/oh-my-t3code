@@ -31,9 +31,13 @@ because git already knows the common ancestor.
 
 ```sh
 git checkout main
+git pull origin main
 git fetch upstream
 git merge upstream/main
 ```
+
+Pull `origin/main` first. Another clone or a merged pull request may have moved it since your
+last pull, and merging upstream onto a stale local `main` produces a second, avoidable merge.
 
 When the merge is clean, run the focused checks for anything the merge touched
 (`vp run --filter <pkg> typecheck`, `vp test run <files>`), then push `main`.
@@ -143,5 +147,5 @@ duplicate cleanly on the next merge once upstream lands it.
 
 Record every merge in the pull request or commit that carries it: the `upstream/main` sha that
 was merged, whether the merge was clean, and which hot files needed a hand-resolved conflict.
-The first sync after this runbook was written is recorded in
-[yashptel/oh-my-t3code#1](https://github.com/yashptel/oh-my-t3code/issues/1).
+The first sync after this runbook was written is
+[yashptel/oh-my-t3code#36](https://github.com/yashptel/oh-my-t3code/pull/36).

@@ -44,6 +44,10 @@ verification applies here unchanged.
 One issue per branch, one concern per PR. Conventional commit titles in plain language, as in
 `feat(provider): register the OMP driver`.
 
+With the GitHub CLI, always pass the repository explicitly:
+`gh pr create --repo yashptel/oh-my-t3code`. This repository is a registered GitHub fork, so
+without `--repo` the CLI targets `pingdotgg/t3code` and fails with "Head sha can't be blank".
+
 Explain what changed and why. State which hot files the PR touches, if any, and why the touch
 could not be avoided.
 
