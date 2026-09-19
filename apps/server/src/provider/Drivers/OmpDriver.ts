@@ -10,6 +10,7 @@ import * as BackgroundPolicy from "../../background/BackgroundPolicy.ts";
 import { ServerConfig } from "../../config.ts";
 import { ServerSettingsService } from "../../serverSettings.ts";
 import { makeOmpTextGeneration } from "../../textGeneration/OmpTextGeneration.ts";
+import { makeOmpAcpRuntime } from "../acp/OmpAcpSupport.ts";
 import { ProviderDriverError } from "../Errors.ts";
 import { makeCursorCommandCatalog } from "../Layers/CursorProvider.ts";
 import { makeOmpAdapter } from "../Layers/OmpAdapter.ts";
@@ -58,6 +59,7 @@ export const OmpDriver: ProviderDriver<OmpSettings, OmpDriverEnv> = {
   defaultConfig: (): OmpSettings => decodeOmpSettings({}),
   create: ({ instanceId, displayName, accentColor, environment, enabled, config }) =>
     Effect.gen(function* () {
+      const crypto = yield* Crypto.Crypto;
       const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
       const serverSettings = yield* ServerSettingsService;
       const { cwd } = yield* ServerConfig;
@@ -109,6 +111,12 @@ export const OmpDriver: ProviderDriver<OmpSettings, OmpDriverEnv> = {
         environment: processEnv,
         ...(eventLoggers.native ? { nativeEventLogger: eventLoggers.native } : {}),
         instanceId,
+        makeRuntime: (input) =>
+          makeOmpAcpRuntime({
+            ...input,
+            ompSettings: effectiveConfig,
+            childProcessSpawner: spawner,
+          }).pipe(Effect.provideService(Crypto.Crypto, crypto)),
         onAvailableCommands: (commands, workspaceCwd) =>
           onAvailableCommands(commands, workspaceCwd, []),
       });

@@ -28,7 +28,6 @@ import * as Scope from "effect/Scope";
 import * as Semaphore from "effect/Semaphore";
 import * as Stream from "effect/Stream";
 import * as SynchronizedRef from "effect/SynchronizedRef";
-import * as ChildProcessSpawner from "effect/unstable/process/ChildProcessSpawner";
 import * as EffectAcpErrors from "effect-acp/errors";
 import type * as EffectAcpSchema from "effect-acp/schema";
 
@@ -57,9 +56,9 @@ import { parsePermissionRequest } from "../acp/AcpRuntimeModel.ts";
 import type * as AcpSessionRuntime from "../acp/AcpSessionRuntime.ts";
 import {
   applyOmpAcpModelSelection,
-  makeOmpAcpRuntime,
   ompModeId,
   selectOmpPermissionOptionId,
+  type OmpAcpRuntimeInput,
 } from "../acp/OmpAcpSupport.ts";
 import type { ProviderAdapterShape } from "../Services/ProviderAdapter.ts";
 import type { EventNdjsonLogger } from "./EventNdjsonLogger.ts";
@@ -73,7 +72,19 @@ const decodeResumeCursor = Schema.decodeUnknownOption(ResumeCursor);
 const isAcpError = Schema.is(EffectAcpErrors.AcpError);
 
 type Adapter = ProviderAdapterShape<ProviderAdapterError>;
-type Runtime = AcpSessionRuntime.AcpSessionRuntime["Service"];
+type Runtime = Pick<
+  AcpSessionRuntime.AcpSessionRuntime["Service"],
+  | "handleRequestPermission"
+  | "start"
+  | "setMode"
+  | "getConfigOptions"
+  | "setModel"
+  | "setConfigOption"
+  | "getEvents"
+  | "drainEvents"
+  | "prompt"
+  | "cancel"
+>;
 type NativePermission = EffectAcpSchema.RequestPermissionRequest;
 type NativePermissionResponse = EffectAcpSchema.RequestPermissionResponse;
 
@@ -85,6 +96,9 @@ export interface OmpAdapterOptions {
     commands: ReadonlyArray<EffectAcpSchema.AvailableCommand>,
     cwd: string,
   ) => Effect.Effect<void>;
+  readonly makeRuntime: (
+    input: Omit<OmpAcpRuntimeInput, "ompSettings" | "childProcessSpawner">,
+  ) => Effect.Effect<Runtime, EffectAcpErrors.AcpError, Scope.Scope>;
 }
 
 interface PendingApproval {
@@ -123,13 +137,12 @@ interface SessionContext {
 /** Keeps one `omp acp` process per thread and drains a cancelled prompt before steering. */
 export const makeOmpAdapter = Effect.fn("makeOmpAdapter")(function* (
   settings: OmpSettings,
-  options: OmpAdapterOptions = {},
+  options: OmpAdapterOptions,
 ) {
   const instanceId = options.instanceId ?? ProviderInstanceId.make("omp");
   const crypto = yield* Crypto.Crypto;
   const fileSystem = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
-  const childProcessSpawner = yield* ChildProcessSpawner.ChildProcessSpawner;
   const serverConfig = yield* ServerConfig;
   const ownerScope = yield* Effect.scope;
   const makeNativeLoggers = yield* makeAcpNativeLoggerFactory();
@@ -393,13 +406,11 @@ export const makeOmpAdapter = Effect.fn("makeOmpAdapter")(function* (
 
         return yield* Effect.gen(function* () {
           const mcp = McpProviderSession.readMcpProviderSession(input.threadId);
-          const runtime = yield* makeOmpAcpRuntime({
-            ompSettings: settings,
+          const runtime = yield* options.makeRuntime({
             environment: McpProviderSession.withAgentDeviceEnvironment(
               options.environment ?? process.env,
               mcp,
             ),
-            childProcessSpawner,
             cwd,
             clientInfo: { name: "t3-code", version: "0.0.0" },
             ...(Option.isSome(cursor) ? { resumeSessionId: cursor.value.sessionId } : {}),
@@ -418,7 +429,7 @@ export const makeOmpAdapter = Effect.fn("makeOmpAdapter")(function* (
               provider: PROVIDER,
               threadId: input.threadId,
             }),
-          }).pipe(Effect.provideService(Crypto.Crypto, crypto));
+          });
           yield* runtime.handleRequestPermission((request) =>
             context
               ? handlePermission(context, request).pipe(
