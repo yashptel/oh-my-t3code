@@ -6,12 +6,14 @@ import * as NodeURL from "node:url";
 
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { assert, it } from "@effect/vitest";
+import * as Crypto from "effect/Crypto";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
 import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
+import { ChildProcessSpawner } from "effect/unstable/process";
 import { describe } from "vite-plus/test";
 
 import {
@@ -26,6 +28,7 @@ import {
 
 import { ServerConfig } from "../../config.ts";
 import { execScriptSource, writeFakeCli } from "../../testUtils/fakeCli.ts";
+import { makeOmpAcpRuntime, type OmpAcpRuntimeInput } from "../acp/OmpAcpSupport.ts";
 import { makeOmpAdapter } from "./OmpAdapter.ts";
 
 const decodeOmpSettings = Schema.decodeSync(OmpSettings);
@@ -33,6 +36,17 @@ const __dirname = NodePath.dirname(NodeURL.fileURLToPath(import.meta.url));
 const mockAgentPath = NodePath.join(__dirname, "../../../scripts/acp-mock-agent.ts");
 const PROVIDER = ProviderDriverKind.make("omp");
 const INSTANCE_ID = ProviderInstanceId.make("omp");
+const makeStockOmpRuntime = (ompSettings: OmpSettings) =>
+  Effect.gen(function* () {
+    const crypto = yield* Crypto.Crypto;
+    const childProcessSpawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+    return (input: Omit<OmpAcpRuntimeInput, "ompSettings" | "childProcessSpawner">) =>
+      makeOmpAcpRuntime({
+        ...input,
+        ompSettings,
+        childProcessSpawner,
+      }).pipe(Effect.provideService(Crypto.Crypto, crypto));
+  });
 
 const ompAdapterTestLayer = ServerConfig.layerTest(process.cwd(), {
   prefix: "t3code-omp-adapter-test-",
@@ -97,10 +111,12 @@ const startMockSession = (input: {
   readonly resumeCursor?: unknown;
 }) =>
   Effect.gen(function* () {
-    const adapter = yield* makeOmpAdapter(
-      decodeOmpSettings({ enabled: true, binaryPath: input.binaryPath }),
-      { instanceId: INSTANCE_ID },
-    ).pipe(Effect.orDie);
+    const settings = decodeOmpSettings({ enabled: true, binaryPath: input.binaryPath });
+    const makeRuntime = yield* makeStockOmpRuntime(settings);
+    const adapter = yield* makeOmpAdapter(settings, {
+      instanceId: INSTANCE_ID,
+      makeRuntime,
+    }).pipe(Effect.orDie);
     const recorder = yield* recordEvents(adapter.streamEvents);
     const session = yield* adapter.startSession({
       threadId: input.threadId,
@@ -331,8 +347,11 @@ describe.runIf(process.env.T3_OMP_LIVE_TURN === "1")("OmpAdapter live omp", () =
             NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "omp-live-")),
           );
           const threadId = ThreadId.make("omp-live-thread");
-          const adapter = yield* makeOmpAdapter(decodeOmpSettings({ enabled: true }), {
+          const settings = decodeOmpSettings({ enabled: true });
+          const makeRuntime = yield* makeStockOmpRuntime(settings);
+          const adapter = yield* makeOmpAdapter(settings, {
             instanceId: INSTANCE_ID,
+            makeRuntime,
           }).pipe(Effect.orDie);
           const recorder = yield* recordEvents(adapter.streamEvents);
           const session = yield* adapter.startSession({
