@@ -103,7 +103,10 @@ export function upsertProviderWorkspaceSnapshot(
 const shouldRetainMissingProviderModels = (provider: ServerProvider): boolean => {
   const isAntigravity = provider.driver === ProviderDriverKind.make("antigravity");
   const isCodex = provider.driver === ProviderDriverKind.make("codex");
-  if (!isAntigravity && !isCodex && provider.driver !== ProviderDriverKind.make("opencode")) {
+  const isDiscoveryAuthoritative =
+    provider.driver === ProviderDriverKind.make("opencode") ||
+    provider.driver === ProviderDriverKind.make("omp");
+  if (!isAntigravity && !isCodex && !isDiscoveryAuthoritative) {
     return true;
   }
 

@@ -732,8 +732,9 @@ export function EnvironmentProviderSettings({
     const defaultInstanceId = defaultInstanceIdForDriver(driver);
     const explicitInstance = settings.providerInstances?.[defaultInstanceId];
     // A remote device may run a server version whose settings predate this
-    // driver, so the legacy mirror can be absent. Without either an explicit
-    // instance or a legacy blob there is nothing to render for the slot.
+    // driver, so the legacy mirror can be absent. Drivers that never had a
+    // legacy mirror still get their default slot when the server advertises
+    // that instance; otherwise there is nothing to render for the slot.
     const legacyConfig = legacyProviders[providerSettings.provider];
     const defaultLegacyConfig = defaultLegacyProviders[providerSettings.provider];
     // The envelope is the single enabled flag: keep the legacy in-config
@@ -742,7 +743,9 @@ export function EnvironmentProviderSettings({
     // turn a default-off provider on.
     const synthesizedInstance = (): ProviderInstanceConfig | undefined => {
       if (legacyConfig === undefined) {
-        return undefined;
+        return serverProviders.some((provider) => provider.instanceId === defaultInstanceId)
+          ? ({ driver, config: {} } satisfies ProviderInstanceConfig)
+          : undefined;
       }
       const { enabled: legacyEnabled, ...legacyConfigRest } = legacyConfig;
       return {

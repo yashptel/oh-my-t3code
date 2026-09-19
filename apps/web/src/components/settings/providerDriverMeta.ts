@@ -4,6 +4,7 @@ import {
   CodexSettings,
   CursorSettings,
   GrokSettings,
+  OmpSettings,
   OpenCodeSettings,
   ProviderDriverKind,
 } from "@t3tools/contracts";
@@ -14,6 +15,7 @@ import {
   CursorIcon,
   GrokIcon,
   type Icon,
+  OmpIcon,
   OpenAI,
   OpenCodeIcon,
 } from "../Icons";
@@ -81,6 +83,13 @@ const PROVIDER_CLIENT_DEFINITIONS: readonly ProviderClientDefinition[] = [
     label: "Antigravity",
     icon: AntigravityIcon,
     settingsSchema: AntigravitySettings,
+  },
+  {
+    value: ProviderDriverKind.make("omp"),
+    label: "Oh My Pi",
+    icon: OmpIcon,
+    badgeLabel: "Early Access",
+    settingsSchema: OmpSettings,
   },
 ];
 
